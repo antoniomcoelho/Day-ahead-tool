@@ -21,6 +21,7 @@ from power_flow_heat import *
 from calculate_criteria import *
 from print_results import *
 from save_results import *
+from run_electricity_DSO_model import *
 
 
 def main():
@@ -85,6 +86,7 @@ def main():
     pi = {'w': [], 'g': [], 'h': [], 'w_up': [], 'g_up': [], 'h_up': [], 'w_down': [], 'g_down': [], 'h_down': [],
           'hy': [], 'hy_up': [], 'hy_down': []}
 
+    pi['w'] = [[0 for i in range(0, h)] for i in range(0, len(load_in_bus_w))]
     pi['w_up'] = [[0 for i in range(0, h)] for i in range(0, len(load_in_bus_w))]
     pi['w_down'] = [[0 for i in range(0, h)] for i in range(0, len(load_in_bus_w))]
     pi['g'] = [[0 for i in range(0, h)] for i in range(0, len(load_in_bus_g))]
@@ -169,125 +171,18 @@ def main():
         costs_all.append(cost)
         pd.DataFrame(costs_all).to_csv("costs.csv")
 
-        if b_prints: 1
-        #print_results_aggregator(m, h, load_in_bus_w, load_in_bus_g, load_in_bus_h)
 
 
-        '''for t in range(0, h):
-            n = 0
-            print('hour', t)
-            print(m.P_P2G_E[12, t].value)
-
-            print(m.P_P2G_hy[12, t].value, "= HV ", m.P_P2G_hy_HV[12, t].value, "net ", m.P_P2G_hy_net[12, t].value, "sto", m.P_sto_hy_ch[0, t].value)
-
-            print(m.y_soc_sto_hy[0, t + 1].value, "= soc", m.y_soc_sto_hy[0, t].value ,"ch", m.y_sto_hy_ch[0, t].value, "dis", m.y_sto_hy_dis[0, t].value)
-            print(m.y_sto_hy_dis[0, t].value, "= HV", m.y_sto_hy_HV[0, t].value, "net", m.P_sto_hy_net[0, t].value/39.72)
-
-            print("Reserves", m.U_P2G_E[12, t].value, m.D_P2G_E[12, t].value)
-
-            for n in range(0, len(load_in_bus_g)):
-                1
-                #print(n, m.y_soc_sto_hy[n, t].value)
-            print("sum net t", m.P_P2G_hy_net[12, t].value + m.P_sto_hy_net[0, t].value )
-
-            print("Ph", m.P_hy[0, t].value, m.P_hy_up[0, t].value, m.P_hy_down[0, t].value)
-            print("")
-
-        print("sum net", sum(m.P_P2G_hy_net[12, t].value + m.P_sto_hy_net[0, t].value for t in range(0, h)))
-        print("sum net P2G", sum(m.P_P2G_hy_net[12, t].value for t in range(0, h)))
-        print("sum net sto", sum(m.P_sto_hy_net[0, t].value for t in range(0, h)))'''
-        for t in range(0, h):
-            '''for i in range(0, len(load_in_bus_g)):
-                print(m.P_aggr_hy[t].value, m.P_aggr_hy_down[i, t].value, m.P_aggr_hy_up[i, t].value)
-            for i in range(0, len(load_in_bus_w)):
-                print(m.P_P2G_E[i, t].value, m.D_P2G_E[i, t].value, m.U_P2G_E[i, t].value)'''
-
-            '''print(m.P_aggr_hy[t].value)
-            for i in range(0, len(load_in_bus_g)):
-                print(m.P_aggr_hy_up[i, t].value, m.P_aggr_hy_down[i, t].value)
-                print(m.P_hy[i, t].value, m.P_hy_up[i, t].value, m.P_hy_down[i, t].value)
-                print(m.y_soc_sto_hy[i, t].value, m.P_sto_hy_ch[i, t].value, m.y_sto_hy_ch[i, t].value, m.y_sto_hy_dis[i, t].value, m.b_y_sto_hy_ch[i, t].value,
-                      m.b_y_sto_hy_dis[i, t].value, m.y_sto_hy_HV[i, t].value, m.P_sto_hy_net[i, t].value, m.D_sto_hy[i, t].value, m.U_sto_hy[i, t].value)
-                print(m.P_dso_hy_up[0, i, t].value, m.P_dso_hy_down[0, i, t].value)
-            for i in range(0, len(load_in_bus_w)):
-                print(m.P_P2G_E[i, t].value, m.U_P2G_E[i, t].value, m.D_P2G_E[i, t].value, m.P_P2G_hy[i, t].value, m.U_P2G_hy[i, t].value,
-                      m.D_P2G_hy[i, t].value, m.P_P2G_hy_HV[i, t].value, m.P_P2G_hy_net[i, t].value, m.U_P2G_hy_net[i, t].value, m.D_P2G_hy_net[i, t].value)'''
-
-
-
-
-        sleep(0)
-
-        # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-        # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
         # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
         #    Run electricity DSO model
         # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-        # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-        if b_prints:
-            print("")
-            print("______ Run Electricity DSO Flow Model ______")
+        print("")
+        print("______ Run Electricity DSO Flow Model ______")
 
-        P_dso_w = []
         P_dso_old_w_up = deepcopy(P_dso_w_up)
-        P_dso_w_up = []
         P_dso_old_w_down = deepcopy(P_dso_w_down)
-        P_dso_w_down = []
-        m1_h = []
-        m1_h_up = []
-        m1_h_down = []
-        results_m1 = []
-
-        for s in range(1, 3): #        for s in range(1, 1):
-            if b_prints:
-                print("")
-                if s == 0:
-                    print("______ Scenario Energy ______")
-                elif s == 1:
-                    print("______ Scenario Up ______")
-                elif s == 2:
-                    print("______ Scenario Down ______")
-
-            for t in range(0, h):
-                m1 = ConcreteModel()
-                m1.c1 = ConstraintList()
-                m1 = create_variables_power_flow(m1, h, branch_w, load_in_bus_w)
-
-                m1 = power_flow_elec(m1, s, branch_w, load_in_bus_w, other_w)
-
-
-                if s == 0:
-                    m1, time_h = optimization_dso(m1, m, t, pi, ro, load_in_bus_w, b_prints, time_h)
-                    m1_h.append(m1)
-
-                    P_dso_prov_w = []
-                    for i in range(0, len(load_in_bus_w)):
-                        P_dso_prov_w.append(m1.P_dso[k, i, 0].value)
-                    P_dso_w.append(P_dso_prov_w)
-
-
-
-                elif s == 1:
-                    m1, time_h = optimization_dso_up(m1, m, t, pi, ro, load_in_bus_w, b_prints, time_h)
-                    m1_h_up.append(deepcopy(m1))
-
-                    P_dso_prov_w_up = []
-                    for i in range(0, len(load_in_bus_w)):
-                        P_dso_prov_w_up.append(m1.P_dso_up[k, i, 0].value)
-                    P_dso_w_up.append(P_dso_prov_w_up)
-
-                elif s == 2:
-                    m1, time_h = optimization_dso_down(m1, m, t, pi, ro, load_in_bus_w, b_prints, time_h)
-                    m1_h_down.append(deepcopy(m1))
-
-                    P_dso_prov_w_down = []
-                    for i in range(0, len(load_in_bus_w)):
-                        P_dso_prov_w_down.append(deepcopy(m1.P_dso_down[k, i, 0].value))
-                    P_dso_w_down.append(P_dso_prov_w_down)
-
-        results_m1.append(m1_h_down)
-        results_m1.append(m1_h_up)
-        results_m1.append(m1_h_down)
+        results_m1, P_dso_w_up, P_dso_w_down, m1_h_up, m1_h_down = \
+            run_electricity_DSO_model(m, h, branch_w, load_in_bus_w, other_w, pi, ro, time_h)
 
 
         # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||

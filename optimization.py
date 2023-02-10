@@ -5,7 +5,7 @@ from pyomo.environ import *
 from time import *
 
 import pandas as pd
-
+import logging
 
 
 def optimization_aggregator(m, h, prices, k, iter, pi0, ro0, Pa, load_in_bus_w, load_in_bus_g, load_in_bus_h,
@@ -426,13 +426,33 @@ def optimization_aggregator(m, h, prices, k, iter, pi0, ro0, Pa, load_in_bus_w, 
 
 
 
-def optimization_dso(m, m0, t, pi0, ro0, load_in_bus_w, b_prints, time_h):
+def solve_using_ipopt(m):
+    solver_name = 'ipopt'
+    #solverpath_exe = 'C:\\Users\\amcoelho\\.conda\\pkgs\\ipopt-3.11.1-2\\Library\\bin\\ipopt'
+    logging.getLogger('pyomo.core').setLevel(logging.ERROR)
+    solver = SolverFactory('ipopt')
+    solver.options['max_iter'] = 1000000
+    results = solver.solve(m, tee=False)
+
+    return m, results
+
+
+def print_status_flow(results, time_h, t):
+    if (results.solver.status == SolverStatus.ok) and (
+            results.solver.termination_condition == TerminationCondition.optimal):
+        print("Flow optimized - hour", t)
+        time_h['dso_w'].append(results.solver.time)
+    else:
+        print("Did not converge")
+
+        return time_h
+
+
+
+def optimization_dso(m, m0, t, pi0, ro0, load_in_bus_w, time_h):
     pi_w = pi0['w']
     ro = ro0['ro']
     k = 0
-
-
-
     m.value = Objective(expr=
                         sum(pi_w[i][t] * (m0.P_dso[k, i, t].value - m.P_dso[k, i, 0])
                             for i in range(0, len(load_in_bus_w))) +
@@ -447,23 +467,21 @@ def optimization_dso(m, m0, t, pi0, ro0, load_in_bus_w, b_prints, time_h):
 
     results = solver.solve(m, tee=False)
     if (results.solver.status == SolverStatus.ok) and ( results.solver.termination_condition == TerminationCondition.optimal):
-        if b_prints:
-            print("Flow optimized - hour", t)
+        print("Flow optimized - hour", t)
         time_h['dso_w'].append(results.solver.time)
     else:
-        if b_prints:
-            print("Did not converge")
+        print("Did not converge")
+
 
 
     return m, time_h
 
 
 
-def optimization_dso_up(m, m0, t, pi0, ro0, load_in_bus_w, b_prints, time_h):
+def optimization_dso_up(m, m0, t, pi0, ro0, load_in_bus_w, time_h):
     pi_w_up = pi0['w_up']
     ro = ro0['ro']
     k = 0
-
 
     m.value = Objective(expr=
                         sum(pi_w_up[i][t] * (m0.P_dso_up[k, i, t].value - m.P_dso_up[k, i, 0])
@@ -472,26 +490,15 @@ def optimization_dso_up(m, m0, t, pi0, ro0, load_in_bus_w, b_prints, time_h):
                                             for i in range(0, len(load_in_bus_w))))
                         , sense=minimize)
 
-    solver_name = 'ipopt'
-    #solverpath_exe = 'C:\\Users\\amcoelho\\.conda\\pkgs\\ipopt-3.11.1-2\\Library\\bin\\ipopt'
-    solver = SolverFactory('ipopt')
-    solver.options['max_iter'] = 1000000
-
-    results = solver.solve(m, tee=False)
-    if b_prints:
-        if (results.solver.status == SolverStatus.ok) and ( results.solver.termination_condition == TerminationCondition.optimal):
-            print("Flow optimized - hour", t)
-            time_h['dso_w'].append(results.solver.time)
-        else:
-            print("Did not converge")
-
+    m, results = solve_using_ipopt(m)
+    time_h = print_status_flow(results, time_h, t)
 
     return m, time_h
 
 
 
 
-def optimization_dso_down(m, m0, t, pi0, ro0, load_in_bus_w, b_prints, time_h):
+def optimization_dso_down(m, m0, t, pi0, ro0, load_in_bus_w, time_h):
     pi_w_down = pi0['w_down']
     ro = ro0['ro']
     k = 0
@@ -503,17 +510,8 @@ def optimization_dso_down(m, m0, t, pi0, ro0, load_in_bus_w, b_prints, time_h):
                                             for i in range(0, len(load_in_bus_w))))
                         , sense=minimize)
 
-    solver = SolverFactory('ipopt')
-    solver.options['max_iter'] = 1000000
-
-    results = solver.solve(m, tee=False)
-    if b_prints:
-        if (results.solver.status == SolverStatus.ok) and ( results.solver.termination_condition == TerminationCondition.optimal):
-            print("Flow optimized - hour", t)
-            time_h['dso_w'].append(results.solver.time)
-        else:
-            print("Did not converge")
-
+    m, results = solve_using_ipopt(m)
+    time_h = print_status_flow(results, time_h, t)
 
     return m, time_h
 
