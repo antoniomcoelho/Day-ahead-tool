@@ -53,11 +53,10 @@ def run_electricity_DSO_model(m, h, branch_w, load_in_bus_w, other_w, pi, ro, ti
         print_scenario_details(s)
 
         P_dso_w_up = []
-        m1_h_up = []
         P_dso_w_down = []
+        m1_h_up = []
         m1_h_down = []
         for t in range(0, h):
-
             # Model initialization
             m1 = ConcreteModel()
             m1.c1 = ConstraintList()

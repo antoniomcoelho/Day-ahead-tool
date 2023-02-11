@@ -22,6 +22,7 @@ from calculate_criteria import *
 from print_results import *
 from save_results import *
 from run_electricity_DSO_model import *
+from run_gas_DSO_model import *
 
 
 def main():
@@ -181,103 +182,31 @@ def main():
 
         P_dso_old_w_up = deepcopy(P_dso_w_up)
         P_dso_old_w_down = deepcopy(P_dso_w_down)
-        results_m1, P_dso_w_up, P_dso_w_down, m1_h_up, m1_h_down = \
-            run_electricity_DSO_model(m, h, branch_w, load_in_bus_w, other_w, pi, ro, time_h)
+
+        #results_m1, P_dso_w_up, P_dso_w_down, m1_h_up, m1_h_down = run_electricity_DSO_model(m, h, branch_w, load_in_bus_w, other_w, pi, ro, time_h)
 
 
-        # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-        # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
         # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
         #    Run gas DSO model
         # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-        # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
         if other_g['b_network']:
-            if b_prints:
-                print("")
-                print("______ Run Gas DSO Flow Model ______")
+            print("")
+            print("______ Run Gas DSO Flow Model ______")
 
             P_dso_old_g = deepcopy(P_dso_g)
-            P_dso_g = []
             P_dso_old_g_up = deepcopy(P_dso_g_up)
-            P_dso_g_up = []
             P_dso_old_g_down = deepcopy(P_dso_g_down)
-            P_dso_g_down = []
 
             P_dso_old_hy = deepcopy(P_dso_hy)
-            P_dso_hy = []
             P_dso_old_hy_up = deepcopy(P_dso_hy_up)
-            P_dso_hy_up = []
             P_dso_old_hy_down = deepcopy(P_dso_hy_down)
-            P_dso_hy_down = []
 
-            m2_old = deepcopy(m2_h_up)
-            m2_h = []
-            m2_h_up = []
-            m2_h_down = []
-            results_m2 = []
+            results_m2, m2_h_up, P_dso_g_up, P_dso_hy_up, m2_h_down, P_dso_g_down, P_dso_hy_down = run_gas_DSO_model(m, m2_h_up, h, branch_g, load_in_bus_g, other_g, pi, ro, time_h, iter)
 
-            for s in range(1, 3):
-                if b_prints:
-                    print("")
-                    if s == 0:
-                        print("______ Scenario Energy ______")
-                    elif s == 1:
-                        print("______ Scenario Up ______")
-                    elif s == 2:
-                        print("______ Scenario Down ______")
 
-                for t in range(0, h):
-                    m2 = ConcreteModel()
-                    m2.c1 = ConstraintList()
 
-                    m2 = create_variables_power_flow_gas(m2, branch_g, load_in_bus_g, t, iter, m2_old)
-                    m2 = power_flow_gas(m2, m, t, s, branch_g, load_in_bus_g, other_g)
-
-                    if s == 0:
-                        m2, time_h = optimization_dso_gas(m2, m, t, pi, ro, load_in_bus_g, b_prints, time_h)
-                        m2_h.append(m2)
-
-                        P_dso_prov_g = []
-                        P_dso_prov_hy = []
-                        for i in range(0, len(load_in_bus_g)):
-                            P_dso_prov_g.append(m2.P_dso_gas[i, 0].value)
-                            P_dso_prov_hy.append(m2.P_dso_hy[i, 0].value)
-                        P_dso_g.append(P_dso_prov_g)
-                        P_dso_hy.append(P_dso_prov_hy)
-
-                    elif s == 1:
-                        m2, time_h = optimization_dso_gas_up(m2, m, t, pi, ro, load_in_bus_g, b_prints, time_h)
-                        m2_h_up.append(m2)
-
-                        P_dso_prov_g_up = []
-                        P_dso_prov_hy_up = []
-                        for i in range(0, len(load_in_bus_g)):
-                            P_dso_prov_g_up.append(m2.P_dso_gas_up[i, 0].value)
-                            P_dso_prov_hy_up.append(m2.P_dso_hy_up[i, 0].value)
-                        P_dso_g_up.append(P_dso_prov_g_up)
-                        P_dso_hy_up.append(P_dso_prov_hy_up)
-
-                        print(t, "WI", m2.WI[0, 0].value, ", HHV_mix", m2.HHV_mix[0, 0].value, "P_hy_net", m2.P_dso_hy_up[0, 0].value/3.54,
-                              "perc", (m2.P_dso_hy_up[0, 0].value/3.54)/(m2.P_dso_hy_up[0, 0].value/3.54 + m2.Pgen_gas[0, 0].value))
-
-                    elif s == 2:
-                        m2, time_h = optimization_dso_gas_down(m2, m, t, pi, ro, load_in_bus_g, b_prints, time_h)
-                        m2_h_down.append(m2)
-
-                        P_dso_prov_g_down = []
-                        P_dso_prov_hy_down = []
-                        for i in range(0, len(load_in_bus_g)):
-                            P_dso_prov_g_down.append(m2.P_dso_gas_down[i, 0].value)
-                            P_dso_prov_hy_down.append(m2.P_dso_hy_down[i, 0].value)
-                        P_dso_g_down.append(P_dso_prov_g_down)
-                        P_dso_hy_down.append(P_dso_prov_hy_down)
-
-                        print(t, "WI", m2.WI[0, 0].value, ", HHV_mix", m2.HHV_mix[0, 0].value, "P_hy_net",
-                              m2.P_dso_hy_down[0, 0].value / 3.54,
-                              "perc", (m2.P_dso_hy_down[0, 0].value/3.54)/(m2.P_dso_hy_down[0, 0].value/3.54 + m2.Pgen_gas[0, 0].value))
-            results_m2.append(m2_h_down)
-            results_m2.append(m2_h_up)
-            results_m2.append(m2_h_down)
 
         # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
         # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
