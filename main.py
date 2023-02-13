@@ -83,36 +83,8 @@ def main():
     criteria_h = []
     criteria_dual_h = []
 
-    pi = {'w': [], 'g': [], 'h': [], 'w_up': [], 'g_up': [], 'h_up': [], 'w_down': [], 'g_down': [], 'h_down': [],
-          'hy': [], 'hy_up': [], 'hy_down': []}
-
-    pi['w'] = [[0 for i in range(0, h)] for i in range(0, len(load_in_bus_w))]
-    pi['w_up'] = [[0 for i in range(0, h)] for i in range(0, len(load_in_bus_w))]
-    pi['w_down'] = [[0 for i in range(0, h)] for i in range(0, len(load_in_bus_w))]
-    pi['g'] = [[0 for i in range(0, h)] for i in range(0, len(load_in_bus_g))]
-    pi['g_up'] = [[0 for i in range(0, h)] for i in range(0, len(load_in_bus_g))]
-    pi['g_down'] = [[0 for i in range(0, h)] for i in range(0, len(load_in_bus_g))]
-    pi['h'] = [[0 for i in range(0, h)] for i in range(0, len(load_in_bus_h))]
-    pi['h_up'] = [[0 for i in range(0, h)] for i in range(0, len(load_in_bus_h))]
-    pi['h_down'] = [[0 for i in range(0, h)] for i in range(0, len(load_in_bus_h))]
-    pi['hy'] = [[0 for i in range(0, h)] for i in range(0, len(load_in_bus_g))]
-    pi['hy_up'] = [[0 for i in range(0, h)] for i in range(0, len(load_in_bus_g))]
-    pi['hy_down'] = [[0 for i in range(0, h)] for i in range(0, len(load_in_bus_g))]
-
-    Pa = {'w': [], 'g': [], 'h': [], 'w_up': [], 'g_up': [], 'h_up': [], 'w_down': [], 'g_down': [], 'h_down': [],
-          'hy': [], 'hy_up': [], 'hy_down': []}
-
-    Pa['w_up'] = [[1 for i in range(0, h)] for i in range(0, len(load_in_bus_w))]
-    Pa['w_down'] = [[1 for i in range(0, h)] for i in range(0, len(load_in_bus_w))]
-    Pa['g'] = [[1 for i in range(0, h)] for i in range(0, len(load_in_bus_g))]
-    Pa['g_up'] = [[1 for i in range(0, h)] for i in range(0, len(load_in_bus_g))]
-    Pa['g_down'] = [[1 for i in range(0, h)] for i in range(0, len(load_in_bus_g))]
-    Pa['h'] = [[1 for i in range(0, h)] for i in range(0, len(load_in_bus_h))]
-    Pa['h_up'] = [[1 for i in range(0, h)] for i in range(0, len(load_in_bus_h))]
-    Pa['h_down'] = [[1 for i in range(0, h)] for i in range(0, len(load_in_bus_h))]
-    Pa['hy'] = [[1 for i in range(0, h)] for i in range(0, len(load_in_bus_g))]
-    Pa['hy_up'] = [[1 for i in range(0, h)] for i in range(0, len(load_in_bus_g))]
-    Pa['hy_down'] = [[1 for i in range(0, h)] for i in range(0, len(load_in_bus_g))]
+    pi, Pa, time_h = initialize_admm_parameters(load_in_bus_w, load_in_bus_g, load_in_bus_h)
+    time_h = {'aggregator': [], 'dso_w': [], 'dso_g': [], 'dso_h': []}
 
 
     P_dso_w_up = []
@@ -127,13 +99,20 @@ def main():
     P_dso_hy_up = []
     P_dso_hy_down = []
 
-    time_h = {'aggregator': [], 'dso_w': [], 'dso_g': [], 'dso_h': []}
+    P_dso = {'w': [], 'g': [], 'h': [], 'w_up': [], 'g_up': [], 'h_up': [], 'w_down': [], 'g_down': [], 'h_down': [],
+          'hy': [], 'hy_up': [], 'hy_down': []}
+
+
 
     # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
     # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-    #    Run aggregator model
+    #    RUN ADMM
     # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
     # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+    print("")
+    print('... Starting ADMM ...')
+    print("")
+
     flag = 0
     k = 0
     iter = 0
@@ -143,19 +122,13 @@ def main():
     count = 0
     ro_tot = []
     costs_all = []
-    print("")
-    print('... Starting ADMM ...')
-    print("")
     while flag == 0:
-
+        # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+        #    Run Aggregator model
+        # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
         print_aggregator_status(iter)
-
         m, time_h = run_aggregator_model(h, number_buildings, load_in_bus_w, load_in_bus_g, load_in_bus_h, number_EVs, profile_solar, temperature_outside, resources_agr,
                                 gen_dh, other_g, other_h, fuel_station, EVs, prices, iter, pi, ro, Pa, time_h, costs_all)
-
-
-
-
 
         # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
         #    Run electricity DSO model
@@ -165,7 +138,7 @@ def main():
         P_dso_old_w_up = deepcopy(P_dso_w_up)
         P_dso_old_w_down = deepcopy(P_dso_w_down)
 
-        #results_m1, P_dso_w_up, P_dso_w_down, m1_h_up, m1_h_down = run_electricity_DSO_model(m, h, branch_w, load_in_bus_w, other_w, pi, ro, time_h)
+        results_m1, P_dso_w_up, P_dso_w_down, m1_h_up, m1_h_down = run_electricity_DSO_model(m, h, branch_w, load_in_bus_w, other_w, pi, ro, time_h)
 
         # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
         #    Run gas DSO model
@@ -182,8 +155,7 @@ def main():
             P_dso_old_hy_up = deepcopy(P_dso_hy_up)
             P_dso_old_hy_down = deepcopy(P_dso_hy_down)
 
-            #results_m2, m2_h_up, P_dso_g_up, P_dso_hy_up, m2_h_down, P_dso_g_down, P_dso_hy_down = run_gas_DSO_model(m, m2_h_up, h, branch_g, load_in_bus_g, other_g, pi, ro, time_h, iter)
-
+            results_m2, m2_h_up, P_dso_g_up, P_dso_hy_up, m2_h_down, P_dso_g_down, P_dso_hy_down = run_gas_DSO_model(m, m2_h_up, h, branch_g, load_in_bus_g, other_g, pi, ro, time_h, iter)
 
         # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
         #    Run heat DSO model
@@ -199,30 +171,18 @@ def main():
             results_m3, m3_h, P_dso_h, m3_h_up, P_dso_h_up, m3_h_down, P_dso_h_down, time_h = \
                 run_heat_DSO_model(m, m3_h, h, branch_h, load_in_bus_h, other_h, pi, ro, time_h, iter, number_buildings, load_h, resources_agr, heat_network)
 
-
-
-
-        # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
         # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
         # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
         #    Update pi
         # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-        # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-
         pi = update_pi(m, m1_h_up, m2_h, m2_h_up, m2_h_down, m1_h_down, m3_h, m3_h_up, m3_h_down,
                        k, h, pi, ro, load_in_bus_w, load_in_bus_g, load_in_bus_h, other_g, other_h)
 
-
-
-        # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-        # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
         # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
         #    Stop criteria
         # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-        # ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-        if b_prints:
-            print("")
-            print("______ Stop criteria calculation ______")
+        print("")
+        print("______ Stop criteria calculation ______")
 
         criteria, criteria_dual = calculate_criteria(m, m1_h_up, m1_h_down, m2_h, m2_h_up, m2_h_down,
                                                      m3_h, m3_h_up, m3_h_down, h, k, iter,
@@ -429,6 +389,44 @@ def print_aggregator_status(iter):
 def print_dso_problem_name(name):
     print("")
     print(f'______ Run {name} DSO Flow Model ______')
+
+
+def initialize_admm_parameters(load_in_bus_w, load_in_bus_g, load_in_bus_h):
+
+    pi = {'w': [], 'g': [], 'h': [], 'w_up': [], 'g_up': [], 'h_up': [], 'w_down': [], 'g_down': [], 'h_down': [],
+          'hy': [], 'hy_up': [], 'hy_down': []}
+
+    pi['w'] = [[0 for i in range(0, h)] for i in range(0, len(load_in_bus_w))]
+    pi['w_up'] = [[0 for i in range(0, h)] for i in range(0, len(load_in_bus_w))]
+    pi['w_down'] = [[0 for i in range(0, h)] for i in range(0, len(load_in_bus_w))]
+    pi['g'] = [[0 for i in range(0, h)] for i in range(0, len(load_in_bus_g))]
+    pi['g_up'] = [[0 for i in range(0, h)] for i in range(0, len(load_in_bus_g))]
+    pi['g_down'] = [[0 for i in range(0, h)] for i in range(0, len(load_in_bus_g))]
+    pi['h'] = [[0 for i in range(0, h)] for i in range(0, len(load_in_bus_h))]
+    pi['h_up'] = [[0 for i in range(0, h)] for i in range(0, len(load_in_bus_h))]
+    pi['h_down'] = [[0 for i in range(0, h)] for i in range(0, len(load_in_bus_h))]
+    pi['hy'] = [[0 for i in range(0, h)] for i in range(0, len(load_in_bus_g))]
+    pi['hy_up'] = [[0 for i in range(0, h)] for i in range(0, len(load_in_bus_g))]
+    pi['hy_down'] = [[0 for i in range(0, h)] for i in range(0, len(load_in_bus_g))]
+
+    Pa = {'w': [], 'g': [], 'h': [], 'w_up': [], 'g_up': [], 'h_up': [], 'w_down': [], 'g_down': [], 'h_down': [],
+          'hy': [], 'hy_up': [], 'hy_down': []}
+
+    Pa['w_up'] = [[1 for i in range(0, h)] for i in range(0, len(load_in_bus_w))]
+    Pa['w_down'] = [[1 for i in range(0, h)] for i in range(0, len(load_in_bus_w))]
+    Pa['g'] = [[1 for i in range(0, h)] for i in range(0, len(load_in_bus_g))]
+    Pa['g_up'] = [[1 for i in range(0, h)] for i in range(0, len(load_in_bus_g))]
+    Pa['g_down'] = [[1 for i in range(0, h)] for i in range(0, len(load_in_bus_g))]
+    Pa['h'] = [[1 for i in range(0, h)] for i in range(0, len(load_in_bus_h))]
+    Pa['h_up'] = [[1 for i in range(0, h)] for i in range(0, len(load_in_bus_h))]
+    Pa['h_down'] = [[1 for i in range(0, h)] for i in range(0, len(load_in_bus_h))]
+    Pa['hy'] = [[1 for i in range(0, h)] for i in range(0, len(load_in_bus_g))]
+    Pa['hy_up'] = [[1 for i in range(0, h)] for i in range(0, len(load_in_bus_g))]
+    Pa['hy_down'] = [[1 for i in range(0, h)] for i in range(0, len(load_in_bus_g))]
+
+    time_h = {'aggregator': [], 'dso_w': [], 'dso_g': [], 'dso_h': []}
+
+    return pi, Pa, time_h
 
 
 if __name__ == '__main__':
