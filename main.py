@@ -13,17 +13,15 @@ from functools import partial
 
 from Initialization import *
 from create_variables import *
-from run_model import *
+from run_aggregator_model import *
 from optimization import *
-from power_flow import *
-from power_flow_gas import *
-from power_flow_heat import *
-from calculate_criteria import *
-from print_results import *
-from save_results import *
 from run_electricity_DSO_model import *
 from run_gas_DSO_model import *
 from run_heat_DSO_model import *
+from calculate_criteria import *
+from print_results import *
+from save_results import *
+
 
 
 def main():
@@ -152,8 +150,8 @@ def main():
 
         print_aggregator_status(iter)
 
-        print_aggregator_status(h, number_buildings, load_in_bus_w, load_in_bus_g, load_in_bus_h, number_EVs, profile_solar, temperature_outside, resources_agr,
-                                gen_dh, other_g, other_h, fuel_station, EVs, prices, iter, pi, ro, Pa, time_h)
+        m, time_h = run_aggregator_model(h, number_buildings, load_in_bus_w, load_in_bus_g, load_in_bus_h, number_EVs, profile_solar, temperature_outside, resources_agr,
+                                gen_dh, other_g, other_h, fuel_station, EVs, prices, iter, pi, ro, Pa, time_h, costs_all)
 
 
 

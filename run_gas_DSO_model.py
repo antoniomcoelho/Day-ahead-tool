@@ -47,6 +47,7 @@ def run_gas_DSO_model(m, m2_h_up, h, branch_g, load_in_bus_g, other_g, pi, ro, t
     return results_m2, m2_h_up, P_dso_g_up, P_dso_hy_up, m2_h_down, P_dso_g_down, P_dso_hy_down
 
 
+
 def print_scenario_details(s):
     print("")
     if s == 0:
@@ -63,6 +64,8 @@ def model_initialization( branch_g, load_in_bus_g, t, iter, m2_old):
 
     return m2
 
+
+
 def run_scenario_energy(m2, m, t, pi, ro, load_in_bus_g, time_h, m2_h, P_dso_g, P_dso_hy):
     # Optimize model
     m2, time_h = optimization_dso_gas(m2, m, t, pi, ro, load_in_bus_g, time_h)
@@ -78,7 +81,6 @@ def run_scenario_energy(m2, m, t, pi, ro, load_in_bus_g, time_h, m2_h, P_dso_g, 
     P_dso_hy.append(P_dso_prov_hy)
 
     return m2_h, P_dso_g, P_dso_hy
-
 
 def run_scenario_upward(m2, m, t, pi, ro, load_in_bus_g, time_h, m2_h_up, P_dso_g_up, P_dso_hy_up):
     # Optimize model
