@@ -93,7 +93,7 @@ def run_gas_DSO_model(m, m2_h_up, h, branch_g, load_in_bus_g, other_g, pi, ro, t
             m2 = create_variables_power_flow_gas(m2, branch_g, load_in_bus_g, t, iter, m2_old)
 
             # Optimal gas flow restrictions
-            m2 = power_flow_gas(m2, m, t, s, branch_g, load_in_bus_g, other_g)
+            m2 = power_flow_gas(m2, s, branch_g, load_in_bus_g, other_g)
 
             # Solve optimal gas flow
             if s == 0:

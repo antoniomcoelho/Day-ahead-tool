@@ -321,66 +321,66 @@ def create_variables_power_flow(m, h, branch, load_in_bus_w):
 
 def create_variables_power_flow_gas(m, branch, load_in_bus_g, t, iter, m_old):
     h = 1
-    m.PF_gas = Var(arange(len(branch)), arange(h), domain=NonNegativeReals, bounds=(1e-20,None), initialize=1e-20)  # purchased power
+    m.q_gas = Var(arange(len(branch)), arange(h), domain=NonNegativeReals, bounds=(1e-20,None), initialize=1e-20)  # gas flow in the pipes (m3/h)
     if iter > 0:
         for i in range(0, len(branch)):
             m.PF_gas[i, 0] = m_old[t].PF_gas[i, 0].value
-    m.PF_in = Var(arange(len(branch)), arange(h), domain=NonNegativeReals)  # purchased power
+    m.q_in = Var(arange(len(branch)), arange(h), domain=NonNegativeReals)  # gas flowing into pipe (m3/h)
     if iter > 0:
         for i in range(0, len(branch)):
             m.PF_in[i, 0] = m_old[t].PF_in[i, 0].value
-    m.PF_out = Var(arange(len(branch)), arange(h), domain=NonNegativeReals)  # purchased power
+    m.q_out = Var(arange(len(branch)), arange(h), domain=NonNegativeReals)  # gas flowing out of pipe  (m3/h)
     if iter > 0:
         for i in range(0, len(branch)):
             m.PF_out[i, 0] = m_old[t].PF_out[i, 0].value
-    m.Pgen_gas = Var(arange(len(load_in_bus_g)), arange(h), domain=NonNegativeReals)
+    m.Pgen_gas = Var(arange(len(load_in_bus_g)), arange(h), domain=NonNegativeReals) # Gas generation at the reference bus (MW)
     if iter > 0:
         for i in range(0, len(load_in_bus_g)):
             m.Pgen_gas[i, 0] = m_old[t].Pgen_gas[i, 0].value
-    m.p = Var(arange(len(load_in_bus_g)), arange(h), domain=NonNegativeReals)
+    m.p = Var(arange(len(load_in_bus_g)), arange(h), domain=NonNegativeReals) # Pressure (bar)
     if iter > 0:
         for i in range(0, len(load_in_bus_g)):
             m.p[i, 0] = m_old[t].p[i, 0].value
-    m.p2 = Var(arange(len(load_in_bus_g)), arange(h), domain=NonNegativeReals)
+    m.p2 = Var(arange(len(load_in_bus_g)), arange(h), domain=NonNegativeReals) # Square pressure (bar)
     if iter > 0:
         for i in range(0, len(load_in_bus_g)):
             m.p2[i, 0] = m_old[t].p2[i, 0].value
 
-    m.P_dso_gas = Var(arange(len(load_in_bus_g)), arange(h), domain=NonNegativeReals)
+    m.P_dso_gas = Var(arange(len(load_in_bus_g)), arange(h), domain=NonNegativeReals) # Gas consumption from aggregator (MW) - scenario energy
     if iter > 0:
         for i in range(0, len(load_in_bus_g)):
             m.P_dso_gas[i, 0] = m_old[t].P_dso_gas[i, 0].value
-    m.P_dso_gas_up = Var(arange(len(load_in_bus_g)), arange(h), domain=NonNegativeReals)
+    m.P_dso_gas_up = Var(arange(len(load_in_bus_g)), arange(h), domain=NonNegativeReals) # Gas consumption from aggregator (MW) - scenario upward
     if iter > 0:
         for i in range(0, len(load_in_bus_g)):
             m.P_dso_gas_up[i, 0] = m_old[t].P_dso_gas_up[i, 0].value
-    m.P_dso_gas_down = Var(arange(len(load_in_bus_g)), arange(h), domain=NonNegativeReals)
+    m.P_dso_gas_down = Var(arange(len(load_in_bus_g)), arange(h), domain=NonNegativeReals) # Gas consumption from aggregator (MW) - scenario downward
     if iter > 0:
         for i in range(0, len(load_in_bus_g)):
             m.P_dso_gas_down[i, 0] = m_old[t].P_dso_gas_down[i, 0].value
 
-    m.P_dso_hy = Var(arange(len(load_in_bus_g)), arange(h), domain=NonNegativeReals)
+    m.P_dso_hy = Var(arange(len(load_in_bus_g)), arange(h), domain=NonNegativeReals) # Hydrogen generation from aggregator (MW) - scenario energy
     if iter > 0:
         for i in range(0, len(load_in_bus_g)):
             m.P_dso_hy[i, 0] = m_old[t].P_dso_hy[i, 0].value
-    m.P_dso_hy_up = Var(arange(len(load_in_bus_g)), arange(h), domain=NonNegativeReals)
+    m.P_dso_hy_up = Var(arange(len(load_in_bus_g)), arange(h), domain=NonNegativeReals) # Hydrogen generation from aggregator (MW) - scenario upward
     if iter > 0:
         for i in range(0, len(load_in_bus_g)):
             m.P_dso_hy_up[i, 0] = m_old[t].P_dso_hy_up[i, 0].value
-    m.P_dso_hy_down = Var(arange(len(load_in_bus_g)), arange(h), domain=NonNegativeReals)
+    m.P_dso_hy_down = Var(arange(len(load_in_bus_g)), arange(h), domain=NonNegativeReals) # Hydrogen generation from aggregator (MW) - scenario downward
     if iter > 0:
         for i in range(0, len(load_in_bus_g)):
             m.P_dso_hy_down[i, 0] = m_old[t].P_dso_hy_down[i, 0].value
 
-    m.WI = Var(arange(len(load_in_bus_g)), arange(h), domain=NonNegativeReals)
+    m.WI = Var(arange(len(load_in_bus_g)), arange(h), domain=NonNegativeReals) # Wobbe index (MJ/m3)
     if iter > 0:
         for i in range(0, len(load_in_bus_g)):
             m.WI[i, 0] = m_old[t].WI[i, 0].value
-    m.HHV_mix = Var(arange(len(load_in_bus_g)), arange(h), domain=NonNegativeReals)
+    m.HHV_mix = Var(arange(len(load_in_bus_g)), arange(h), domain=NonNegativeReals) # Higher heating value (MJ/m3)
     if iter > 0:
         for i in range(0, len(load_in_bus_g)):
             m.HHV_mix[i, 0] = m_old[t].HHV_mix[i, 0].value
-    m.S_mix = Var(arange(len(load_in_bus_g)), arange(h), domain=NonNegativeReals)
+    m.S_mix = Var(arange(len(load_in_bus_g)), arange(h), domain=NonNegativeReals) # Specific gas gravity
     if iter > 0:
         for i in range(0, len(load_in_bus_g)):
             m.S_mix[i, 0] = m_old[t].S_mix[i, 0].value
