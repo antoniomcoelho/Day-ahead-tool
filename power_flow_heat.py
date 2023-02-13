@@ -1,14 +1,10 @@
-from xlrd import *
 from numpy import *
 from math import *
-from pyomo.environ import *
-import pandas as pd
-import numpy as np
-import pyomo.environ as pyom
 from copy import *
 
 
 def power_flow_heat(m, m0, t0, s, branch, load, buses, resources_agr, heat_network, other_h):
+    t = 0
     # ____________________________________Power Flow___________________________________________________
     Cp = other_h['Cp']
     Ta = other_h['Ta']
@@ -28,6 +24,7 @@ def power_flow_heat(m, m0, t0, s, branch, load, buses, resources_agr, heat_netwo
     load_in_bus_h = heat_network['load_in_bus_h']
 
 
+    # Define buses with thermal loads
     buses_load = []
     buses_with_dh_thermal = []
     buildings_with_dh = []
@@ -41,7 +38,7 @@ def power_flow_heat(m, m0, t0, s, branch, load, buses, resources_agr, heat_netwo
             if resources_agr[num_building]['installed']['dh'] == 1:
                 buildings_with_dh.append(num_building + 1)
 
-
+    # Define buses load at extreme points and middle points
     buses_load_extremes = []
     buses_middle = []
     for i in range(0, len(buses)):
@@ -58,10 +55,9 @@ def power_flow_heat(m, m0, t0, s, branch, load, buses, resources_agr, heat_netwo
             buses_middle.append(i)
 
 
-    t = 0
-    h = 1
 
     # ____________________________ Load and DR__________________________________________
+    # Define load and generation at different type of buses
     for k in range(0, len(buses)):
         if k in buses_load and k in buses_gen:
             m.c1.add(m.mq_load[k, t] >= 0)
@@ -118,7 +114,8 @@ def power_flow_heat(m, m0, t0, s, branch, load, buses, resources_agr, heat_netwo
         m.c1.add(m.p[branch[i][0], t] - m.p[branch[i][1], t] == a * m.m[i, t] ** 2)
 
     # ____________________________(3) Heat power equations__________________________________________
-    if s == 0:
+
+    if s == 0: # Scenario energy
         for i in range(0, len(buses)):
             if i in buses_load:
                 if i in buses_middle:
@@ -145,7 +142,7 @@ def power_flow_heat(m, m0, t0, s, branch, load, buses, resources_agr, heat_netwo
             else:
                 m.c1.add(m.P_dso_heat[i, t] == 0)
 
-    elif s == 1:
+    elif s == 1: # Scenario upward
         for i in range(0, len(buses)):
             if i in buses_load:
                 if i in buses_middle:
@@ -175,7 +172,7 @@ def power_flow_heat(m, m0, t0, s, branch, load, buses, resources_agr, heat_netwo
             else:
                 m.c1.add(m.P_dso_heat_up[i, t] == 0)
 
-    elif s == 2:
+    elif s == 2: # Scenario downward
         for i in range(0, len(buses)):
             if i in buses_load:
                 if i in buses_middle:
@@ -348,6 +345,11 @@ def power_flow_heat(m, m0, t0, s, branch, load, buses, resources_agr, heat_netwo
                     m.c1.add(m.Ts_return[i, t] == m.T_end_return[j, t])
                 if branch1[j][0] == i:
                     m.c1.add(m.Ts_return[i, t] == m.T_start_return[j, t])
+
+
+    ###################################################################################################################
+    #  Variables limits
+    ###################################################################################################################
 
     for i in range(0, len(buses)):
         m.c1.add(m.Ts[i, t] >= Ts_min)

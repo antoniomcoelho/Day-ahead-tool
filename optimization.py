@@ -1,10 +1,5 @@
-from xlrd import *
 from numpy import *
 from pyomo.environ import *
-#from math import *
-from time import *
-
-import pandas as pd
 import logging
 
 
@@ -439,6 +434,7 @@ def solve_using_ipopt(m):
 def solve_using_ipopt_gas_heat(m):
     solver_name = 'ipopt'
     #solverpath_exe = 'C:\\Users\\amcoelho\\.conda\\pkgs\\ipopt-3.11.1-2\\Library\\bin\\ipopt'
+
     logging.getLogger('pyomo.core').setLevel(logging.ERROR)
     solver = SolverFactory('ipopt')
     solver.options['max_iter'] = 1000000
@@ -450,10 +446,12 @@ def print_status_flow(results, time_h, t, type_flow):
     if (results.solver.status == SolverStatus.ok) and (results.solver.termination_condition == TerminationCondition.optimal):
         print("Flow optimized - hour", t)
         time_h[f'{type_flow}'].append(results.solver.time)
+        flag_error = 0
     else:
         print("Did not converge")
+        flag_error = 1
 
-        return time_h
+    return time_h, flag_error
 
 
 def optimization_dso(m, m0, t, pi0, ro0, load_in_bus_w, time_h):
@@ -467,19 +465,9 @@ def optimization_dso(m, m0, t, pi0, ro0, load_in_bus_w, time_h):
                                             for i in range(0, len(load_in_bus_w))))
                         , sense=minimize)
 
-    solver_name = 'ipopt'
-    solverpath_exe = 'C:\\Users\\amcoelho\\.conda\\pkgs\\ipopt-3.11.1-2\\Library\\bin\\ipopt'
-    solver = SolverFactory(solver_name, executable=solverpath_exe)
-    solver.options['max_iter'] = 1000000
+    m, results = solve_using_ipopt(m)
 
-    results = solver.solve(m, tee=False)
-    if (results.solver.status == SolverStatus.ok) and ( results.solver.termination_condition == TerminationCondition.optimal):
-        print("Flow optimized - hour", t)
-        time_h['dso_w'].append(results.solver.time)
-    else:
-        print("Did not converge")
-
-
+    time_h, flag = print_status_flow(results, time_h, t, 'dso_g')
 
     return m, time_h
 
@@ -496,7 +484,7 @@ def optimization_dso_up(m, m0, t, pi0, ro0, load_in_bus_w, time_h):
                         , sense=minimize)
 
     m, results = solve_using_ipopt(m)
-    time_h = print_status_flow(results, time_h, t, 'dso_w')
+    time_h, flag = print_status_flow(results, time_h, t, 'dso_w')
 
     return m, time_h
 
@@ -513,11 +501,9 @@ def optimization_dso_down(m, m0, t, pi0, ro0, load_in_bus_w, time_h):
                         , sense=minimize)
 
     m, results = solve_using_ipopt(m)
-    time_h = print_status_flow(results, time_h, t, 'dso_w')
+    time_h, flag = print_status_flow(results, time_h, t, 'dso_w')
 
     return m, time_h
-
-
 
 
 def optimization_dso_gas(m, m0, t, pi0, ro0, load_in_bus_g, time_h):
@@ -542,7 +528,7 @@ def optimization_dso_gas(m, m0, t, pi0, ro0, load_in_bus_g, time_h):
         results = m.solutions.load_from(results1)
         time_h['dso_g'].append(results1.solver.time)
 
-    time_h = print_status_flow(results1, time_h, t, 'dso_g')
+    time_h, flag = print_status_flow(results1, time_h, t, 'dso_g')
 
     return m, time_h
 
@@ -572,15 +558,9 @@ def optimization_dso_gas_up(m, m0, t, pi0, ro0, load_in_bus_g, time_h):
 
     m, results1 = solve_using_ipopt_gas_heat(m)
 
-    if (results1.solver.status == SolverStatus.ok) and (results1.solver.termination_condition == TerminationCondition.optimal):
-        results = m.solutions.load_from(results1)
-        time_h['dso_g'].append(results1.solver.time)
-
-    time_h = print_status_flow(results1, time_h, t, 'dso_g')
+    time_h, flag = print_status_flow(results1, time_h, t, 'dso_g')
 
     return m, time_h
-
-
 
 def optimization_dso_gas_down(m, m0, t, pi0, ro0, load_in_bus_g, time_h):
     k = 0
@@ -607,50 +587,28 @@ def optimization_dso_gas_down(m, m0, t, pi0, ro0, load_in_bus_g, time_h):
 
     m, results1 = solve_using_ipopt_gas_heat(m)
 
-    if (results1.solver.status == SolverStatus.ok) and (results1.solver.termination_condition == TerminationCondition.optimal):
-        results = m.solutions.load_from(results1)
-        time_h['dso_g'].append(results1.solver.time)
-
-    time_h = print_status_flow(results1, time_h, t, 'dso_g')
+    time_h, flag = print_status_flow(results1, time_h, t, 'dso_g')
 
     return m, time_h
 
 
-
-
-def optimization_dso_heat(m, m0, t, pi0, ro0, load_in_bus_h, b_prints, time_h):
+def optimization_dso_heat(m, m0, t, pi0, ro0, load_in_bus_h, time_h):
     ro = ro0['ro']
     pi_h = pi0['h']
     k = 0
-
-    for i in range(0, len(load_in_bus_h)):
-        print(i, m0.P_dso_heat[k, i, t].value)
 
     m.value = Objective(expr=
                             sum(pi_h[i][t] * (m0.P_dso_heat[k, i, t].value - m.P_dso_heat[i, 0]) for i in range(0, len(load_in_bus_h))) +
                               ro/2 * (sum(((m0.P_dso_heat[k, i, t].value - m.P_dso_heat[i, 0])) ** 2 for i in range(0, len(load_in_bus_h))))
                         , sense=minimize)
 
-    solver = SolverFactory('ipopt')
-    solver.options['max_iter'] = 1000000
+    m, results1 = solve_using_ipopt_gas_heat(m)
 
-    results1 = solver.solve(m, tee=False, load_solutions=False)
-
-    if (results1.solver.status == SolverStatus.ok) and \
-            (results1.solver.termination_condition == TerminationCondition.optimal):
-        results = m.solutions.load_from(results1)
-        if b_prints: print("Flow optimized - hour", t)
-        flag_error = 0
-        time_h['dso_h'].append(results1.solver.time)
-    else:
-        if b_prints: print("Repeat solving...")
-        flag_error = 1
-
+    time_h, flag_error = print_status_flow(results1, time_h, t, 'dso_h')
 
     return m, flag_error, time_h
 
-
-def optimization_dso_heat_up(m, m0, t, pi0, ro0, load_in_bus_h, b_prints, time_h):
+def optimization_dso_heat_up(m, m0, t, pi0, ro0, load_in_bus_h, time_h):
     ro = ro0['ro']
     pi_h_up = pi0['h_up']
     k = 0
@@ -660,25 +618,13 @@ def optimization_dso_heat_up(m, m0, t, pi0, ro0, load_in_bus_h, b_prints, time_h
                               ro/2 * (sum(((m0.P_dso_heat_up[k, i, t].value - m.P_dso_heat_up[i, 0])) ** 2 for i in range(0, len(load_in_bus_h))))
                         , sense=minimize)
 
-    solver = SolverFactory('ipopt')
-    solver.options['max_iter'] = 1000000
+    m, results1 = solve_using_ipopt_gas_heat(m)
 
-    results1 = solver.solve(m, tee=False, load_solutions=False)
-
-    if (results1.solver.status == SolverStatus.ok) and \
-            (results1.solver.termination_condition == TerminationCondition.optimal):
-        results = m.solutions.load_from(results1)
-        if b_prints: print("Flow optimized - hour", t)
-        flag_error = 0
-        time_h['dso_h'].append(results1.solver.time)
-    else:
-        if b_prints: print("Repeat solving...")
-        flag_error = 1
+    time_h, flag_error = print_status_flow(results1, time_h, t, 'dso_h')
 
     return m, flag_error, time_h
 
-
-def optimization_dso_heat_down(m, m0, t, pi0, ro0, load_in_bus_h, b_prints, time_h):
+def optimization_dso_heat_down(m, m0, t, pi0, ro0, load_in_bus_h, time_h):
     ro = ro0['ro']
     pi_h_down = pi0['h_down']
     k = 0
@@ -688,21 +634,9 @@ def optimization_dso_heat_down(m, m0, t, pi0, ro0, load_in_bus_h, b_prints, time
                               ro/2 * (sum(((m0.P_dso_heat_down[k, i, t].value - m.P_dso_heat_down[i, 0])) ** 2 for i in range(0, len(load_in_bus_h))))
                         , sense=minimize)
 
-    solver = SolverFactory('ipopt')
-    solver.options['max_iter'] = 1000000
+    m, results1 = solve_using_ipopt_gas_heat(m)
 
-    results1 = solver.solve(m, tee=False, load_solutions=False)
-
-    if (results1.solver.status == SolverStatus.ok) and \
-            (results1.solver.termination_condition == TerminationCondition.optimal):
-        results = m.solutions.load_from(results1)
-        if b_prints: print("Flow optimized - hour", t)
-        flag_error = 0
-        time_h['dso_h'].append(results1.solver.time)
-    else:
-        if b_prints: print("Repeat solving...")
-        flag_error = 1
-
+    time_h, flag_error = print_status_flow(results1, time_h, t, 'dso_h')
 
     return m, flag_error, time_h
 
